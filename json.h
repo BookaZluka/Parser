@@ -1,302 +1,144 @@
-#include <any>
-#include <vector>
+#include <iostream>
 #include <string>
-#include <stdlib.h>
+#include <vector>
+#include <map>
+#include <any>
 
-class Json
-{
-public:
-	std::vector<std::any> key_code;
-	std::vector<std::any> mean_code;
-	std::vector<std::any> array_code;
-	// Конструктор из строки, содержащей Json-данные.
-	Json(const std::string& str);
-	// Метод возвращает true, если данный экземпляр содержит в себе JSON-массив.
-	// Иначе false.
-	bool is_array() const;
-	// Метод возвращает true, если данный экземпляр содержит в себе JSON-объект.
-	// Иначе false.
-	bool is_object() const;
-	// Метод возвращает значение по ключу key, если экземпляр является
-	// JSON-объектом.
-	// Значение может иметь один из следующих типов: Json, std::string, double,
-	// bool или быть пустым.
-	// Если экземпляр является JSON-массивом, генерируется исключение.
-	std::any& operator[](const std::string& key);
-	// Метод возвращает значение по индексу index, если экземпляр является
-	// JSON-массивом.
-	// Значение может иметь один из следующих типов: Json, std::string, double,
-	// bool или быть пустым.
-	// Если экземпляр является JSON-объектом, генерируется исключение.
-	std::any& operator[](int index);
-	// Метод возвращает объект класса Json из строки, содержащей Json-данные.
-	static Json parse(const std::string& s)
-	{
-		Json curr(s);
-		return curr;
-	};
-	// Метод возвращает объекта класса Json из файла, содержащего Json-данные в
-	// текстовом формате.
-	static Json parseFile(const std::string& path_to_file);
+using namespace std;
+
+class Json {
+    private:
+    vector<any> keys;
+    vector<any> values;
+    vector<any> array;
+
+    public:
+        Json(const std::string& s);
+
+        bool is_array() const;
+
+        bool is_object() const;
+
+        std::any& operator[](const std::string& key);
+
+        std::any& operator[](int index);
+
+        static Json parse(const std::string& s){
+            int i=0;
+            string str="\0";
+            while(s[i] != '\0'){
+                if(s[i] != '\n' && s[i] != '\t' && s[i] != ' ')
+                    str+=s[i];
+                i++;
+            }
+            Json cur(str);
+            return cur;
+        };
+
+        static Json parseFile(const std::string& path_to_file);
 };
 
-Json::Json(const std::string& str)
-{
-	std::string s;
-	for (unsigned int i = 0; i < str.length(); i++)
-	{
-		if (str[i] != ' ')
-		{
-			if (str[i] == '\n')
-				continue;
-			if (str[i] == '\t')
-				continue;
-			if (str[i] == ',')
-			{
-				s += str[i];
-				s += ' ';
-				continue;
-			}
-			s += str[i];
-		}
-
-		else
-		{
-			if ((str[i - 1] == ':') || (str[i + 1] == ':'))
-			{
-				s += str[i];
-				continue;
-			}
-			continue;
-		}
-	}
-	int count = 0;
-
-	switch (s[count])
-	{
-	case '{':
-	{
-		while (s[count] != '}')
-		{
-			std::string key_str;
-			std::string mean_str;
-			while (s[count] != '"')
-				count++;
-			count++;
-			while (s[count] != '"')
-			{
-				key_str += s[count];
-				count++;
-			}
-			key_code.push_back(key_str);
-			for (int i = 0; i < 4; i++)
-				count++;
-
-			if (s[count] == '{')
-			{
-				while (s[count] != '}')
-				{
-					mean_str += s[count];
-					count++;
-				}
-				mean_str += s[count];
-				count++;
-				Json mean(mean_str);
-				mean_code.push_back(mean);
-				continue;
-			}
-
-			if (s[count] == '[')
-			{
-				while (s[count] != ']')
-				{
-					mean_str += s[count];
-					count++;
-				}
-				mean_str += s[count];
-				count++;
-				Json mean(mean_str);
-				mean_code.push_back(mean);
-				continue;
-			}
-
-			if (s[count] == '"')
-			{
-				count++;
-				while (s[count] != '"')
-				{
-					mean_str += s[count];
-					count++;
-				}
-				count++;
-				mean_code.push_back(mean_str);
-				continue;
-			}
-			
-			if ((s[count] == '1') || (s[count] == '2') || (s[count] == '3') || (s[count] == '4')
-				|| (s[count] == '5') || (s[count] == '6') || (s[count] == '7')
-				|| (s[count] == '8') || (s[count] == '9') || (s[count] == '0'))
-			{
-				while ((s[count] != ',') && (s[count] != '}'))
-				{
-					mean_str += s[count];
-					count++;
-				}
-				double mean = atof(mean_str.c_str());
-				mean_code.push_back(mean);
-				continue;
-			}
-		}
-	}
-	break;
-
-	case '[':
-	{
-		std::string mean_str;
-		count++;
-
-		if (s[count] == '{')
-		{
-			while (s[count] != ']')
-			{
-				while (s[count] != '}')
-				{
-					mean_str += s[count];
-					count++;
-				}
-				mean_str += s[count];
-				count++;
-				Json mean(mean_str);
-				array_code.push_back(mean);
-				mean_str = "";
-				if (s[count] == ',')
-				{
-					count++;
-					count++;
-				}
-			}
-		}
-
-		if (s[count] == '[')
-		{
-			while (s[count] != ']')
-			{
-				while (s[count] != ']')
-				{
-					mean_str += s[count];
-					count++;
-				}
-				mean_str += s[count];
-				count++;
-				if (s[count] == ',')
-				{
-					count++;
-					count++;
-				}
-				Json mean(mean_str);
-				array_code.push_back(mean);
-				mean_str = "";
-			}
-		}
-
-		if (s[count] == '"')
-		{
-			while (s[count] != ']')
-			{
-				count++;
-				while (s[count] != '"')
-				{
-					mean_str += s[count];
-					count++;
-				}
-				count++;
-				if (s[count] == ',')
-				{
-					count++;
-					count++;
-				}
-				array_code.push_back(mean_str);
-				mean_str = "";
-			}
-		}
-		
-		if ((s[count] == '1') || (s[count] == '2') || (s[count] == '3') || (s[count] == '4')
-			|| (s[count] == '5') || (s[count] == '6') || (s[count] == '7') || (s[count] == '8')
-			|| (s[count] == '9') || (s[count] == '0'))
-		{
-			while (s[count] != ']')
-			{
-				while ((s[count] != ',') && (s[count] != ']'))
-				{
-					mean_str += s[count];
-					count++;
-				}
-				double mean = atof(mean_str.c_str());
-				array_code.push_back(mean);
-				mean_str = "";
-				if (s[count] == ',')
-				{
-					count++;
-					count++;
-				}
-			}
-		}
-	}
-	break;
-	}
+Json::Json(const std::string& s){
+    int i=1;
+    string str;
+    if(s[0] == '[' && s[s.length()-1] == ']'){
+        while(s[i] != ']'){
+            if(s[i] == ',' || s[i] == ']'){
+                i++;
+                array.push_back(atoi(str.c_str()));
+                str="";
+            }
+            str+=s[i];
+            i++;
+        }
+        array.push_back(atoi(str.c_str()));
+        str="";
+    }
+    if(s[0] == '{' && s[s.length()-1] == '}')
+        while(i<s.length()-1){
+            if(s[i] == ',')
+                i++;
+            if(s[i] == '"'){
+                i++;
+                while(s[i] != '"'){
+                    str+=s[i];
+                    i++;
+                }
+                i++;
+                //добавление в ключ
+                keys.push_back(str);
+                //cout<<str<<endl;
+                str="";
+            }else if(s[i] == ':'){
+                i++;
+                if(s[i] == '"'){
+                    i++;
+                    while(s[i] != '"'){
+                        str+=s[i];
+                        i++;
+                    }
+                    i++;
+                    values.push_back(str);
+                    str="";
+                    //добавление в значения
+                }else if(s[i] == '['){
+                    while(s[i] != ']'){
+                        str+=s[i];
+                        i++;
+                    }
+                    str+=s[i];
+                    i++;
+                    Json cur(str);
+                    values.push_back(cur);
+                    //cout<<str<<endl;
+                    str="";
+                }else if(s[i] == 't' || s[i] == 'f'){
+                    bool test;
+                    if(s[i] == 'f') {
+                        test=false;
+                        values.push_back(test);
+                    }else{
+                        test=true;
+                        values.push_back(test);
+                    }
+                    while(s[i] != ','){
+                        str+=s[i];
+                        i++;
+                    }
+                    //cout<<str<<endl;
+                    i++;
+                    str="";
+                }else if(s[i] == '{'){
+                    while(s[i] != '}'){
+                        str+=s[i];
+                        i++;
+                    }
+                    str+=s[i];
+                    i++;
+                    Json cur1(str);
+                    values.push_back(cur1);
+                    //cout<<str<<endl;
+                    str="";
+                }else{
+                    while(s[i] != ','){
+                        str+=s[i];
+                        i++;
+                    }
+                    i++;
+                    values.push_back(atoi(str.c_str()));
+                    //cout<<str<<endl;
+                    str="";
+                }
+            }
+        }
 }
-
-bool Json::is_array() const
-{
-	if (array_code.size() > 0)
-		return true;
-	for (unsigned int i = 0; i < mean_code.size(); i++)
-	{
-		if (mean_code[i].type() == typeid(Json))
-		{
-			Json json = std::any_cast<Json>(mean_code[i]);
-			if (json.is_array())
-				return true;
-		}
-	}
-	return false;
+any& Json::operator[](const std::string& key) {
+    for (int i = 0; i < keys.size(); i++) {
+        if (any_cast<string>(keys[i]) == key) {
+            return values[i];
+        }
+    }
 }
-
-bool Json::is_object() const
-{
-	if (mean_code.size() > 0)
-		return true;
-	for (unsigned int i = 0; i < array_code.size(); i++)
-	{
-		if (array_code[i].type() == typeid(Json))
-		{
-			Json json = std::any_cast<Json>(array_code[i]);
-			if (json.is_object())
-				return true;
-		}
-	}
-	return false;
-}
-
-std::any& Json::operator[](const std::string& key)
-{
-	if (array_code.size() > 0)
-	{
-		throw 1;
-	}
-	for (unsigned int i = 0; i < key_code.size(); i++)
-	{
-		if (std::any_cast<std::string>(key_code[i]) == key)
-			return mean_code[i];
-	}
-	return mean_code[0];
-}
-
-std::any& Json::operator[](int index)
-{
-	if (mean_code.size() > 0)
-	{
-		throw 1;
-	}
-	return array_code[index];
+std::any& Json::operator[](int index) {
+    return array[index];
 }
